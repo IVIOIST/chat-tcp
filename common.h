@@ -10,6 +10,7 @@
 
 #define MAX_NAME_LEN 32
 #define MAX_MSG_LEN 1024
+#define MAX_CLIENTS 100
 
 enum MessageType {
     MSG_SET_NAME = 1,
@@ -22,6 +23,13 @@ enum MessageType {
 struct MessageHeader {
     enum MessageType type;
     uint32_t payload_len;
+};
+
+
+struct Client {
+    int sockfd;
+    char username[MAX_NAME_LEN];
+    bool active;
 };
 
 int send_all(int sockfd, const void* buffer, size_t length);

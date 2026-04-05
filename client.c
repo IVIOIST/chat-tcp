@@ -2,10 +2,17 @@
 
 int init_socket();
 int connect_socket(int sockD, uint16_t port);
+void print_logo();
+void print_menu();
+void read_input(char *buffer, size_t size);
+
+struct Client thisClient;
 
 int main(int argc, char* argv[]) {
-    int sockD = init_socket();
-    int connectStatus = connect_socket(sockD, 9001);
+    print_logo();
+    print_menu();
+    const int sockD = init_socket();
+    const int connectStatus = connect_socket(sockD, 9001);
     if (sockD < 0) {
         perror("socket");
         return 1;
@@ -16,21 +23,38 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    char strData[255];
-    while (fgets(strData, sizeof(strData), stdin) != NULL) {
-        size_t len = strlen(strData);
-        if (len > 0 && strData[len - 1] == '\n') {
-            strData[len - 1] = '\0'; // Remove newline character
-            len--;
+    while (true) {
+        char input[MAX_MSG_LEN + 1];
+        read_input(input, sizeof(input));
+
+        if (strcmp(input, "/quit") == 0) {
+            printf("Exiting...\n");
+            break;
         }
 
-        if (send_packet(sockD, MSG_CHAT, strData, len) == -1) {
-            perror("send_packet");
-            break;
+        if (strncmp(input, "/name ", 6) == 0) {
+            char *new_name = input + 6;
+
+            if (*new_name == '\0') {
+                printf("[error] usage: /name <username>\n");
+                continue;
+            }
+
+            strncpy(thisClient.username, new_name, sizeof(thisClient.username) - 1);
+            thisClient.username[sizeof(thisClient.username) - 1] = '\0';
+
+            if (send_packet(sockD, MSG_SET_NAME, thisClient.username, strlen(thisClient.username)) < 0) {
+                perror("send_packet");
+                break;
+            }
+        } else {
+            if (send_packet(sockD, MSG_CHAT, input, strlen(input)) < 0) {
+                perror("send_packet");
+                break;
+            }
         }
     }
 
-    close(sockD);
     return 0;
 }
 
@@ -61,4 +85,32 @@ int connect_socket(int sockD, uint16_t port) {
         return -1;
     }
     return 0;
+}
+
+void print_logo() {
+    printf("_________ .__            __          ______________________________ \n");
+    printf("\\_   ___ \\|  |__ _____ _/  |_        \\__    ___/\\_   ___ \\______   \\\n");
+    printf("/    \\  \\/|  |  \\\\__  \\\\   __\\  ______ |    |   /    \\  \\/|     ___/\n");
+    printf("\\     \\___|   Y  \\/ __ \\|  |   /_____/ |    |   \\     \\___|    |    \n");
+    printf(" \\______  /___|  (____  /__|           |____|    \\______  /____|    \n");
+    printf("        \\/     \\/     \\/                                \\/          \n");
+}
+
+void print_menu() {
+    printf("\n\n");
+    printf("              ================Commands================\n");
+    printf("              plain text           -> broadcast\n");
+    printf("              /dm <user> <message> -> private message\n");
+    printf("              /users               -> list users\n");
+    printf("              /name                -> set username\n");
+    printf("              /quit                -> exit\n\n");
+}
+
+void read_input(char* buffer, size_t size) {
+    if (fgets(buffer, size, stdin) != NULL) {
+        size_t len = strlen(buffer);
+        if (len > 0 && buffer[len - 1] == '\n') {
+            buffer[len - 1] = '\0';
+        }
+    }
 }

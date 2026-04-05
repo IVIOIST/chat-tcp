@@ -1,5 +1,8 @@
 #include "common.h"
 
+
+struct Client clients[MAX_CLIENTS];
+
 int init_socket();
 int bind_socket(int sockD, uint16_t port);
 
@@ -17,14 +20,29 @@ int main(int argc, char const* argv[]) {
 
     while (true) {
         int clientSocket = accept(servSockD, NULL, NULL);
+        if (clientSocket < 0) {
+            perror("accept");
+            continue;
+        }
 
         enum MessageType type;
+        char buffer[MAX_MSG_LEN+1];
         uint32_t payload_len;
-        char buffer[1024];
+
         while (recv_packet(clientSocket, &type, buffer, 1024, &payload_len) == 0) {
-            buffer[payload_len] = '\0';
-            printf("Received (%u bytes): %s\n", payload_len, buffer);
-            fflush(stdout);
+            switch (type) {
+                case MSG_CHAT:
+                    buffer[payload_len] = '\0'; // Null-terminate the received message
+                    printf("Received (%u bytes): %s\n", payload_len, buffer);
+                    fflush(stdout);
+                    break;
+                case MSG_SET_NAME:
+                    printf("Client set name: %.*s\n", payload_len, buffer);
+                    break;
+                default:
+                    fprintf(stderr, "Unknown message type: %d\n", type);
+                    break;
+            }
         }
     }
     close(servSockD);
