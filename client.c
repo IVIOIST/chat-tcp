@@ -28,11 +28,10 @@ int main(int argc, char* argv[]) {
         read_input(input, sizeof(input));
 
         if (strcmp(input, "/quit") == 0) {
+            send_packet(sockD, MSG_QUIT, NULL, 0);
             printf("Exiting...\n");
             break;
-        }
-
-        if (strncmp(input, "/name ", 6) == 0) {
+        } else if (strncmp(input, "/name ", 6) == 0) { // NOLINT
             char *new_name = input + 6;
 
             if (*new_name == '\0') {
@@ -44,6 +43,11 @@ int main(int argc, char* argv[]) {
             thisClient.username[sizeof(thisClient.username) - 1] = '\0';
 
             if (send_packet(sockD, MSG_SET_NAME, thisClient.username, strlen(thisClient.username)) < 0) {
+                perror("send_packet");
+                break;
+            }
+        } else if (strcmp(input, "/users") == 0) {
+            if (send_packet(sockD, MSG_LIST_CLIENTS, NULL, 0) < 0) {
                 perror("send_packet");
                 break;
             }
@@ -98,12 +102,12 @@ void print_logo() {
 
 void print_menu() {
     printf("\n\n");
-    printf("              ================Commands================\n");
-    printf("              plain text           -> broadcast\n");
-    printf("              /dm <user> <message> -> private message\n");
-    printf("              /users               -> list users\n");
-    printf("              /name                -> set username\n");
-    printf("              /quit                -> exit\n\n");
+    printf("             =================Commands=================\n");
+    printf("             plain text              -> broadcast\n");
+    printf("             /dm <user-id> <message> -> private message\n");
+    printf("             /users                  -> list users\n");
+    printf("             /name                   -> set username\n");
+    printf("             /quit                   -> exit\n\n");
 }
 
 void read_input(char* buffer, size_t size) {

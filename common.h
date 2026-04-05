@@ -7,6 +7,8 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <string.h>
+#include <pthread.h>
+
 
 #define MAX_NAME_LEN 32
 #define MAX_MSG_LEN 1024
@@ -15,9 +17,9 @@
 enum MessageType {
     MSG_SET_NAME = 1,
     MSG_CHAT = 2,
-    MSG_JOIN = 3,
-    MSG_LEAVE = 4,
-    MSG_NOTICE = 5,
+    MSG_DM = 3,
+    MSG_LIST_CLIENTS = 4,
+    MSG_QUIT = 5,
 };
 
 struct MessageHeader {
